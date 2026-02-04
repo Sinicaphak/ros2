@@ -1,3 +1,4 @@
+from geometry_msgs.msg import Point
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -50,7 +51,7 @@ class VllmAskNode(Node):
             self.pic_topic,
             self.image_callback,
             100)
-        self.cmd_vel_publisher_ = self.create_publisher(Twist, self.commd_topic, 10)
+        self.point_publisher_ = self.create_publisher(Point, self.commd_topic, 10)
         self.process_img_publisher_ = self.create_publisher(Image, self.process_pic_topic, 10)
         self.bridge = CvBridge()
         
@@ -68,8 +69,9 @@ class VllmAskNode(Node):
         avg_duration = self.total_duration / self.request_count
         self.get_logger().info(f"--> 响应 for {imgName} ({duration:.2f}s) 平均: {avg_duration:.2f}s: \n{respone}")
         
-        # twist = self.__parse_twist_from_response(respone)
-        # self.__publish_cmd_vel(twist)
+        point = self.__parse_point_from_response(respone)
+        if point is not None:
+            self.__publish_point(point)
         
     def __showImg(self, imgBase64, imgName):
         # 解码 base64 为 numpy 数组
@@ -98,19 +100,9 @@ class VllmAskNode(Node):
         image_name = msg.header.frame_id if msg.header.frame_id else ""
         return base64_image, image_name
 
-    def __publish_cmd_vel(self, twist):
-        # if (twist.linear.x > 3.0 ):
-        #     twist.linear.x = 3.0
-        # if (twist.linear.x < -3.0 ):
-        #     twist.linear.x = -3.0
-            
-        # if (twist.angular.z > 1.0 ):
-        #     twist.angular.z = 1.0
-        # if (twist.angular.z < -1.0 ):
-        #     twist.angular.z = -1.0
-
-        if twist is not None:
-            self.cmd_vel_publisher_.publish(twist)
+    def __publish_point(self, point):
+        if point is not None:
+            self.point_publisher_.publish(point)
             
     def __send_request_doubao(self, imgBase64, imgName):
         client = OpenAI(
@@ -180,29 +172,17 @@ class VllmAskNode(Node):
         except requests.exceptions.RequestException as e:
             self.get_logger().info(f"  -> 请求失败 for {imgName}: {e}")
             
-    def __parse_twist_from_response(self, response_text):
-        # 假设模型输出格式为 "[speed, action]"，如 "[1.0, turning right]"
-        twist = Twist()
-        match = re.search(r'\[\s*([-+]?\d*\.?\d+)\s*,\s*(turning left|turning right|moving forward|stop)\s*\]', response_text, re.IGNORECASE)
+    def __parse_point_from_response(self, response_text):
+        point = Point()
+        point.z = 0.0
+        match = re.search(r'\[\s*([-+]?\d*\.?\d+)\s*,\s*([-+]?\d*\.?\d+)\s*\]', response_text)
         if match:
-            speed = float(match.group(1))
-            action = match.group(2).lower()
-            twist.linear.x = speed
-            if action == "turning left":
-                twist.angular.z = 1.0
-            elif action == "turning right":
-                twist.angular.z = -1.0
-            elif action == "moving forward":
-                twist.angular.z = 0.0
-            elif action == "stop":
-                twist.linear.x = 0.0
-                twist.angular.z = 0.0
+            point.x = float(match.group(1))
+            point.y = float(match.group(2))
+            return point
         else:
-            self.get_logger().warn("模型输出无法解析，默认停止")
-            twist.linear.x = 0.0
-            twist.angular.z = 0.0
-        return twist
-
+            self.get_logger().warn("模型输出未找到坐标，默认丢弃")
+            return None
 
 def main(args=None):
     rclpy.init(args=args)

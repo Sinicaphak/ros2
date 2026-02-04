@@ -31,7 +31,7 @@ class LinearMPC(MPC):
         super().__init__(config)
         self.prev_u = np.array([0.0, 0.0])
 
-    def mpc_controller(self, x_curr, u_prev, ref, dt, horizon):
+    def __mpc_controller(self, x_curr, u_prev, ref, dt, horizon):
         """
         修正版：在当前工作点 (Operating Point) 进行线性化
         x_curr: [x, y, theta]
@@ -173,7 +173,7 @@ class LinearMPC(MPC):
 
         reference = np.array([goal_point[0], goal_point[1], theta_ref, v_ref, w_ref])
 
-        success, u_cmd = self.mpc_controller(
+        success, u_cmd = self.__mpc_controller(
             x_curr=current_pose,
             u_prev=self.prev_u, 
             ref=reference,

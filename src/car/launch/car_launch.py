@@ -6,7 +6,7 @@ PIC_DIR = "/home/apollo/disk/ros2/src/car/pic/5"
 # 话题
 PIC_TOPIC = "/car/pic"
 PROCESS_PIC_TOPIC = "/car/process_pic"
-COMMD_TOPIC = "/cmd_vel"
+COMMD_TOPIC = "/goal_point"
 # 发布频率(fps)
 FPS = 30
 # 模型API
