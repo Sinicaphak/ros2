@@ -1,7 +1,7 @@
 root_path="/home/apollo/disk/ros2"
 
 cd $root_path
-colcon build
+colcon build --packages-select car mpc_planner
 source $root_path/install/setup.bash
 # clear
 # ros2 launch car car_launch.py
