@@ -1,0 +1,52 @@
+// # === Section 1: Sine Wave (Starts from Origin) ===
+// 0.00 0.00
+// 1.00 0.84
+// 2.00 0.91
+// 3.00 0.14
+// 4.00 -0.76
+// 5.00 -0.96
+// 6.00 -0.28
+// 7.00 0.66
+// 8.00 0.99
+// 9.00 0.41
+// 10.00 -0.54
+// 
+// # === Return to Origin (From End of Sine) ===
+// # 线性插值回原点，避免直接跳变
+// 7.50 0.00
+// 5.00 0.00
+// 2.50 0.00
+// 0.00 0.00
+
+# === Section 2: Sharp Turn (Z-Shape / Square Wave like) ===
+# Move straight then sharp 90 deg turns
+2.00 0.00
+2.00 2.00
+4.00 2.00
+4.00 0.00
+6.00 0.00
+6.00 2.00
+
+# === Return to Origin (From End of Sharp Turn) ===
+4.00 1.00
+2.00 0.50
+0.00 0.00
+
+# === Section 3: Circle (Approximate) ===
+# Center at (-2, 2), Radius 2. Starts from Origin -> (-2, 0)
+-1.00 0.00
+-2.00 0.00
+-3.41 0.59
+-3.95 1.63
+-3.73 2.96
+-2.83 3.82
+-1.54 3.95
+-0.41 3.23
+0.00 2.00
+-0.41 0.77
+-1.39 0.09
+-2.00 0.00
+
+# === Return to Origin (From End of Circle) ===
+-1.00 0.00
+0.00 0.00
