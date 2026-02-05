@@ -7,6 +7,7 @@ PIC_DIR = "/home/apollo/disk/ros2/src/car/pic/5"
 PIC_TOPIC = "/car/pic"
 PROCESS_PIC_TOPIC = "/car/process_pic"
 COMMD_TOPIC = "/goal_point"
+mode="camera"
 # 发布频率(fps)
 FPS = 30
 # 模型API
@@ -30,23 +31,23 @@ Dont answer anything else.
 
 def generate_launch_description():
     return LaunchDescription([
-        Node(
-            package='car',
-            executable='vllm_ask',
-            name='vllm_ask',
-            parameters=[{
-                'pic_topic': PIC_TOPIC,
-                'process_pic_topic': PROCESS_PIC_TOPIC,
-                'commd_topic': COMMD_TOPIC,
-                'api_url': API_URL,
-                'compression_quality': COMPRESSION_QUALITY,
-                'img_width': IMG_WIDTH,
-                'img_hight': IMG_HIGHT,
-                'max_tokens': MAX_TOKENS,
-                'system_prompt': SYSTEM_PROMPT,
-                'user_prompt': USER_PROMPT,
-            }],
-        ),
+        # Node(
+        #     package='car',
+        #     executable='vllm_ask',
+        #     name='vllm_ask',
+        #     parameters=[{
+        #         'pic_topic': PIC_TOPIC,
+        #         'process_pic_topic': PROCESS_PIC_TOPIC,
+        #         'commd_topic': COMMD_TOPIC,
+        #         'api_url': API_URL,
+        #         'compression_quality': COMPRESSION_QUALITY,
+        #         'img_width': IMG_WIDTH,
+        #         'img_hight': IMG_HIGHT,
+        #         'max_tokens': MAX_TOKENS,
+        #         'system_prompt': SYSTEM_PROMPT,
+        #         'user_prompt': USER_PROMPT,
+        #     }],
+        # ),
         Node(
             package='car',
             executable='image_publisher',
@@ -55,6 +56,7 @@ def generate_launch_description():
                 'pic_topic': PIC_TOPIC,
                 'fps': FPS,
                 'pic_dir': PIC_DIR,
+                'mode': mode,
             }],
         ),
     ])

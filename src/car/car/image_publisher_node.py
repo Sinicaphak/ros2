@@ -1,3 +1,4 @@
+import subprocess
 import time
 import rclpy
 from rclpy.node import Node
@@ -9,36 +10,62 @@ import os
 class ImagePublisherNode(Node):
     def __init__(self):
         super().__init__('image_publisher_node')
-        
+        # 模式：local 或 camera
+        self.declare_parameter('mode', 'local')
         self.declare_parameter('pic_topic', '/car/pic')
         self.declare_parameter('fps', 30)
         self.declare_parameter('pic_dir', '/home/apollo/disk/ros2/src/car/pic/3')
+        self.declare_parameter('camera_device', '/dev/video0')
+        self.declare_parameter('frame_width', 0)
+        self.declare_parameter('frame_height', 0)
 
+        self.mode = self.get_parameter('mode').get_parameter_value().string_value
         self.pic_topic = self.get_parameter('pic_topic').get_parameter_value().string_value
         self.fps = self.get_parameter('fps').get_parameter_value().integer_value
         self.pic_dir = self.get_parameter('pic_dir').get_parameter_value().string_value
-        
+        self.camera_device = self.get_parameter('camera_device').get_parameter_value().string_value
+        self.frame_width = self.get_parameter('frame_width').get_parameter_value().integer_value
+        self.frame_height = self.get_parameter('frame_height').get_parameter_value().integer_value
+
         time.sleep(4)
 
         self.publisher_ = self.create_publisher(Image, self.pic_topic, 10)
         timer_period = 1.0 / self.fps
         self.timer = self.create_timer(timer_period, self.timer_callback)
-        
-        # 1. 更改话题名称为 /car/pic
-        self.publisher_ = self.create_publisher(Image, self.pic_topic, 10)
-        
-        # 2. 设置发布频率
-        timer_period = 1.0 / self.fps
-        self.timer = self.create_timer(timer_period, self.timer_callback)
-        
+
         self.bridge = CvBridge()
         self.cv_images = []
+        self.image_files = []
         self.current_image_index = 0
+        self.cap = None  # camera capture handle
 
-        # 3. 加载所有图片
-        self.load_images()
-        self.get_logger().info(f'发布到话题{self.pic_topic}, 频率: {self.fps} FPS')
+        if self.mode == 'local':
+            self.load_images()
+            self.get_logger().info(f'本地图片模式: 目录 {self.pic_dir}, {len(self.cv_images)} 张, {self.fps} FPS')
+        else:
+            self.init_camera()
+            self.get_logger().info(f'摄像头模式: 设备 {self.camera_device}, {self.fps} FPS')
 
+    def init_camera(self):
+        # 尝试用 v4l2-ctl 设置帧率
+        try:
+            subprocess.run(
+                ['v4l2-ctl', '-d', self.camera_device, '--set-parm', str(self.fps)],
+                check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+        except FileNotFoundError:
+            self.get_logger().warn('未找到 v4l2-ctl，跳过帧率设置')
+
+        self.cap = cv2.VideoCapture(self.camera_device)
+        if not self.cap.isOpened():
+            self.get_logger().error(f'无法打开摄像头 {self.camera_device}')
+            rclpy.shutdown()
+            os._exit(1)
+            return
+        if self.frame_width > 0:
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_width)
+        if self.frame_height > 0:
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_height)
 
     def load_images(self):
         """从 self.pic_dir 加载所有图片文件。"""
@@ -63,35 +90,40 @@ class ImagePublisherNode(Node):
         
         if not self.cv_images:
             self.get_logger().error("没有成功加载任何图片。")
-
-
-    def timer_callback(self):
-        if not self.cv_images:
-            self.get_logger().warn('没有可发布的图片，请检查图片目录。', throttle_duration_sec=5)
-            return
-
-        if self.current_image_index >= len(self.cv_images):
-            # 已经全部发布完毕
-            return
-        
-        # 获取当前要发布的图片
-        cv_image = self.cv_images[self.current_image_index]
-        # 需要保存文件名列表
-        image_file = self.image_files[self.current_image_index]
-        
-        self.get_logger().debug(f'正在发布图片索引: {self.current_image_index}')
-        
-        # 转换并发布图片
+            
+    def publish_frame(self, cv_image, frame_id):
         ros_image = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
         ros_image.header.stamp = self.get_clock().now().to_msg()
-        ros_image.header.frame_id = image_file
+        ros_image.header.frame_id = frame_id
         self.publisher_.publish(ros_image)
-        
-        # 更新索引, 如果发布完所有图片，停止发布
-        self.current_image_index = self.current_image_index + 1
-        if self.current_image_index >= len(self.cv_images):
-            self.get_logger().info(f'已发布完所有图片共{len(self.cv_images)}张，停止发布。')
-            self.timer.cancel()
+
+    def timer_callback(self):
+        if self.mode == 'local':
+            if not self.cv_images:
+                self.get_logger().warn('没有可发布的图片，请检查图片目录。', throttle_duration_sec=5)
+                return
+            if self.current_image_index >= len(self.cv_images):
+                return
+            cv_image = self.cv_images[self.current_image_index]
+            image_file = self.image_files[self.current_image_index]
+            self.publish_frame(cv_image, image_file)
+            self.current_image_index += 1
+            if self.current_image_index >= len(self.cv_images):
+                self.get_logger().info(f'已发布完所有图片共{len(self.cv_images)}张，停止发布。')
+                self.timer.cancel()
+        else:
+            if self.cap is None or not self.cap.isOpened():
+                self.get_logger().warn('摄像头未打开，无法发布。', throttle_duration_sec=5)
+                rclpy.shutdown()
+                os._exit(1)
+                return
+            ret, frame = self.cap.read()
+            if not ret:
+                self.get_logger().warn('读取摄像头帧失败。', throttle_duration_sec=5)
+                return
+            # 如需与本地图片同样的预处理（缩放、滤波等），在这里调用同样的函数
+            processed = frame  # 如果有处理逻辑，写在这里
+            self.publish_frame(processed, 'camera_frame')
         
 
 def main(args=None):
