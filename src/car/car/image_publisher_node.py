@@ -15,7 +15,7 @@ class ImagePublisherNode(Node):
         self.declare_parameter('pic_topic', '/car/pic')
         self.declare_parameter('fps', 30)
         self.declare_parameter('pic_dir', '/home/apollo/disk/ros2/src/car/pic/3')
-        self.declare_parameter('camera_device', '/dev/video0')
+        self.declare_parameter('camera_device', '/dev/video1')
         self.declare_parameter('frame_width', 0)
         self.declare_parameter('frame_height', 0)
 
