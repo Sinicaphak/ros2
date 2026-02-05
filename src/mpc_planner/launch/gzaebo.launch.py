@@ -2,6 +2,10 @@ import os
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -12,20 +16,25 @@ def generate_launch_description():
     urdf_model_path = os.path.join(pkg_share, 'urdf', urdf_name)
     rviz_config_path = os.path.join(pkg_share, 'rviz', 'default.rviz')
     goal_file_path = os.path.join(pkg_share, 'goal', 'goal.txt')
+    
+    log_level_arg = DeclareLaunchArgument(
+        'log_level', default_value='warn',
+        description='Logger level for all nodes')
+
+    log_level = LaunchConfiguration('log_level')
 
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        arguments=[urdf_model_path],
-        output='screen'
-    )
+        arguments=[urdf_model_path, '--ros-args', '--log-level', log_level],
+        output='screen')
 
     joint_state_publisher = Node(
         package='joint_state_publisher',
         executable='joint_state_publisher',
         name='joint_state_publisher',
-        output='screen'
-    )
+        output='screen',
+        arguments=['--ros-args', '--log-level', log_level])
 
     simulator_node = Node(
         package='mpc_planner',
@@ -37,7 +46,8 @@ def generate_launch_description():
             'base_frame': 'base_footprint',
             'publish_rate': 50.0,
             'cmd_timeout': 0.5
-        }]
+        }],
+        arguments=['--ros-args', '--log-level', log_level],
     )
 
     mpc_controller_node = Node(
@@ -45,7 +55,8 @@ def generate_launch_description():
         executable='mpc_controller',
         name='mpc_controller',
         output='screen',
-        parameters=[os.path.join(pkg_share, 'config', 'mpc_params.yaml')]
+        parameters=[os.path.join(pkg_share, 'config', 'mpc_params.yaml')],
+        arguments=['--ros-args', '--log-level', log_level],
     )
 
     goal_sender_node = Node(
@@ -53,7 +64,8 @@ def generate_launch_description():
         executable='goal_sender',
         name='goal_sender',
         output='screen',
-        parameters=[{'goal_file': goal_file_path}]
+        parameters=[{'goal_file': goal_file_path}],
+        arguments=['--ros-args', '--log-level', log_level],
     )
 
     rviz_node = Node(
@@ -61,10 +73,11 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz2',
         output='screen',
-        arguments=['-d', rviz_config_path]
+        arguments=['-d', rviz_config_path, '--ros-args', '--log-level', log_level],
     )
 
     ld = LaunchDescription()
+    ld.add_action(log_level_arg)
     ld.add_action(joint_state_publisher)
     ld.add_action(robot_state_publisher)
     ld.add_action(simulator_node)

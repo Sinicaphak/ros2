@@ -8,7 +8,6 @@ import cv2
 import requests
 import numpy as np
 import base64
-import requests
 import os
 import time
 from datetime import datetime
@@ -32,7 +31,8 @@ class VllmAskNode(Node):
         self.declare_parameter('img_hight', 0)
         self.declare_parameter('max_tokens', 0)
         self.declare_parameter('system_prompt', '')
-        self.declare_parameter('user_prompt', '')
+        self.declare_parameter('human_prompt', '')
+        self.declare_parameter('gpt_prompt', '')
 
         # 获取参数并赋值为实例变量
         self.pic_topic = self.get_parameter('pic_topic').get_parameter_value().string_value
@@ -44,7 +44,8 @@ class VllmAskNode(Node):
         self.img_hight = self.get_parameter('img_hight').get_parameter_value().integer_value
         self.max_tokens = self.get_parameter('max_tokens').get_parameter_value().integer_value
         self.system_prompt = self.get_parameter('system_prompt').get_parameter_value().string_value
-        self.user_prompt = self.get_parameter('user_prompt').get_parameter_value().string_value
+        self.human_prompt = self.get_parameter('human_prompt').get_parameter_value().string_value
+        self.gpt_prompt = self.get_parameter('gpt_prompt').get_parameter_value().string_value
         
         self.subscription = self.create_subscription(
             Image,
@@ -153,12 +154,18 @@ class VllmAskNode(Node):
                     "role": "user",
                     "content": [
                         {"type": "image_url", "image_url": {"url": imgBase64}},
-                        {"type": "text", "text": self.user_prompt}
+                        {"type": "text", "text": self.human_prompt}
+                    ]
+                },
+                {
+                    "role": "assistant",
+                    "content": [
+                        {"type": "text", "text": self.gpt_prompt}
                     ]
                 }
             ],
             "max_tokens": self.max_tokens,
-            "temperature": 0.5,
+            "temperature": 0.0,
         }
 
 
