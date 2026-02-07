@@ -9,7 +9,7 @@ colcon build
 
 sudo apt install v4l-utils
 v4l2-ctl --list-devices    
-nvgstcapture-1.0 --camsrc=1 --cap-dev-node=0
+nvgstcapture-1.0 --camsrc=0 --cap-dev-node=1
 
 ros2/tools/jetson-gs_usb-kernel-builder.sh 这个脚本编译并安装gs_usb驱动
 orin的usb转can的端口号是can0, ros2/src/ugv_sdk/scripts里面要改一下

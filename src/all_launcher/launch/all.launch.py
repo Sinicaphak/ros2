@@ -8,7 +8,7 @@ from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
     vllm_and_camera_log_level_arg = DeclareLaunchArgument('vllm_and_camera_log_level', default_value='info')
-    mpc_log_level_arg = DeclareLaunchArgument('mpc_log_level', default_value='error')
+    mpc_log_level_arg = DeclareLaunchArgument('mpc_log_level', default_value='info')
     hunter_log_level_arg = DeclareLaunchArgument('hunter_log_level', default_value='error')
 
     vllm_and_camera_log_level = LaunchConfiguration('vllm_and_camera_log_level')
@@ -42,6 +42,6 @@ def generate_launch_description():
         hunter_log_level_arg,
         
         vllm_and_camera, 
-        # mpc_planner,
+        mpc_planner,
         # hunter,
     ])

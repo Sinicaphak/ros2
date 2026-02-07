@@ -1,4 +1,4 @@
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PoseArray, Pose
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -32,7 +32,6 @@ class VllmAskNode(Node):
         self.declare_parameter('max_tokens', 0)
         self.declare_parameter('system_prompt', '')
         self.declare_parameter('human_prompt', '')
-        self.declare_parameter('gpt_prompt', '')
 
         # 获取参数并赋值为实例变量
         self.pic_topic = self.get_parameter('pic_topic').get_parameter_value().string_value
@@ -45,14 +44,13 @@ class VllmAskNode(Node):
         self.max_tokens = self.get_parameter('max_tokens').get_parameter_value().integer_value
         self.system_prompt = self.get_parameter('system_prompt').get_parameter_value().string_value
         self.human_prompt = self.get_parameter('human_prompt').get_parameter_value().string_value
-        self.gpt_prompt = self.get_parameter('gpt_prompt').get_parameter_value().string_value
         
         self.subscription = self.create_subscription(
             Image,
             self.pic_topic,
             self.image_callback,
             100)
-        self.point_publisher_ = self.create_publisher(Point, self.commd_topic, 10)
+        self.point_publisher_ = self.create_publisher(PoseArray, self.commd_topic, 10)
         self.process_img_publisher_ = self.create_publisher(Image, self.process_pic_topic, 10)
         self.bridge = CvBridge()
         
@@ -70,9 +68,9 @@ class VllmAskNode(Node):
         avg_duration = self.total_duration / self.request_count
         self.get_logger().info(f"--> 响应 for {imgName} ({duration:.2f}s) 平均: {avg_duration:.2f}s: \n{respone}")
         
-        point = self.__parse_point_from_response(respone)
-        if point is not None:
-            self.__publish_point(point)
+        points = self.__parse_point_from_response(respone)
+        if points is not None and len(points) > 0:
+            self.__publish_points(points)
         
     def __showImg(self, imgBase64, imgName):
         # 解码 base64 为 numpy 数组
@@ -101,44 +99,19 @@ class VllmAskNode(Node):
         image_name = msg.header.frame_id if msg.header.frame_id else ""
         return base64_image, image_name
 
-    def __publish_point(self, point):
-        if point is not None:
-            self.point_publisher_.publish(point)
+    def __publish_points(self, points):
+        pose_array = PoseArray()
+        pose_array.header.stamp = self.get_clock().now().to_msg()
+        pose_array.header.frame_id = "map" 
+
+        for p in points:
+            pose = Pose()
+            pose.position = p
+            pose.orientation.w = 1
+            pose_array.poses.append(pose)
             
-    def __send_request_doubao(self, imgBase64, imgName):
-        client = OpenAI(
-            api_key="sk-zctlhvenvuillirzxzhnjsiefvwkbechhvzxsrsmjsodpoqi",
-            base_url="https://api.siliconflow.cn/v1"
-        )
-
-        response = client.chat.completions.create(
-            model="Qwen/Qwen2.5-VL-72B-Instruct",
-            messages=[
-                {
-                    "role": "system",
-                    "content": [
-                        {"type": "text", "text": self.system_prompt}
-                    ]
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "image_url", "image_url": {"url": imgBase64}},
-                        {"type": "text", "text": self.user_prompt}
-                    ]
-                }
-            ]
-        )
-
-        try:
-            response = response.choices[0].message.content
-            # result = response.json()
-            self.get_logger().info(f"豆包响应 for {imgName}: {response}")
-            return response
-        except Exception as e:
-            self.get_logger().error(f"豆包请求失败: {e}")
-            return None
-    
+        self.point_publisher_.publish(pose_array)   
+        
     def __send_sequential_request(self, imgBase64, imgName):
         headers = {"Content-Type": "application/json"}
         payload = {
@@ -157,12 +130,6 @@ class VllmAskNode(Node):
                         {"type": "text", "text": self.human_prompt}
                     ]
                 },
-                {
-                    "role": "assistant",
-                    "content": [
-                        {"type": "text", "text": self.gpt_prompt}
-                    ]
-                }
             ],
             "max_tokens": self.max_tokens,
             "temperature": 0.0,
@@ -180,16 +147,23 @@ class VllmAskNode(Node):
             self.get_logger().info(f"  -> 请求失败 for {imgName}: {e}")
             
     def __parse_point_from_response(self, response_text):
-        point = Point()
-        point.z = 0.0
-        match = re.search(r'\[\s*([-+]?\d*\.?\d+)\s*,\s*([-+]?\d*\.?\d+)\s*\]', response_text)
-        if match:
-            point.x = float(match.group(1))
-            point.y = float(match.group(2))
-            return point
-        else:
+        matches = re.findall(
+            r'\(\s*([-+]?\d*\.?\d+)\s*,\s*([-+]?\d*\.?\d+)\s*\)',
+            response_text
+        )
+
+        if not matches:
             self.get_logger().warn("模型输出未找到坐标，默认丢弃")
             return None
+        
+        points = []
+        for x_str, y_str in matches:
+            p = Point()
+            p.x = float(x_str)
+            p.y = float(y_str)
+            p.z = 0.0
+            points.append(p)
+        return points
 
 def main(args=None):
     rclpy.init(args=args)

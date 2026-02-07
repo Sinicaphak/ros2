@@ -47,25 +47,12 @@ class ImagePublisherNode(Node):
             self.get_logger().info(f'摄像头模式: 设备 {self.camera_device}, {self.fps} FPS')
 
     def init_camera(self):
-        # 尝试用 v4l2-ctl 设置帧率
-        try:
-            subprocess.run(
-                ['v4l2-ctl', '-d', self.camera_device, '--set-parm', str(self.fps)],
-                check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-            )
-        except FileNotFoundError:
-            self.get_logger().warn('未找到 v4l2-ctl，跳过帧率设置')
-
         self.cap = cv2.VideoCapture(self.camera_device)
         if not self.cap.isOpened():
             self.get_logger().error(f'无法打开摄像头 {self.camera_device}')
             rclpy.shutdown()
             os._exit(1)
             return
-        if self.frame_width > 0:
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_width)
-        if self.frame_height > 0:
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_height)
 
     def load_images(self):
         """从 self.pic_dir 加载所有图片文件。"""
@@ -121,9 +108,7 @@ class ImagePublisherNode(Node):
             if not ret:
                 self.get_logger().warn('读取摄像头帧失败。', throttle_duration_sec=5)
                 return
-            # 如需与本地图片同样的预处理（缩放、滤波等），在这里调用同样的函数
-            processed = frame  # 如果有处理逻辑，写在这里
-            self.publish_frame(processed, 'camera_frame')
+            self.publish_frame(frame, 'camera_frame')
         
 
 def main(args=None):

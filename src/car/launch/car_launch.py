@@ -13,9 +13,10 @@ PIC_DIR = "/home/apollo/disk/ros2/src/car/pic/5"
 PIC_TOPIC = "/car/pic"
 PROCESS_PIC_TOPIC = "/car/process_pic"
 COMMD_TOPIC = "/goal_point"
+# MODE="local"
 MODE="camera"
 # 发布频率(fps)
-FPS = 60
+FPS = 30
 # 模型API
 API_URL = "http://localhost:8002/v1/chat/completions"
 # 图片压缩质量 (1-100, 越低压缩率越高)
@@ -23,19 +24,19 @@ COMPRESSION_QUALITY = 50
 IMG_WIDTH=426
 IMG_HIGHT=240
 # 模型输出最大token数
-MAX_TOKENS = 200
+MAX_TOKENS = 100
 # prompt
 
 SYSTEM_PROMPT = """""
 You are an autonomous driving planner.
 Coordinate system: X-axis is lateral, Y-axis is longitudinal.
 The ego vehicle is at (0,0), units are meters.
-Based on the provided front-view image and driving context, plan future waypoints at 0.5-second intervals for the next 3 seconds
+Based on the provided front-view image and driving context, plan future waypoints at 0.5-second intervals for the next 3 seconds.
+format: [(-0.00,0.00), (-0.00,0.00), (-0.00,0.00), (-0.00,0.00), (-0.00,0.00), (-0.00,0.00)]
 """""
 
 HUMAN_PROMPT = """""
 Here is the front-view image from the car.
-Historical trajectory (last 2 seconds): [(0.00,-0.00), (0.00,-0.00), (0.00,-0.00), (0.00,-0.00)]
 Mission goal: FORWARD
 Traffic rules:
 - Avoid collision with other objects.
@@ -46,10 +47,6 @@ Please plan future waypoints at 0.5-second intervals for the next 3 seconds.
 You MUST only output the trajectory within the specified format that system request.
 """
 
-GPT_PROMPT = """""
-Trajectory:
-[(-0.00,0.00), (-0.00,0.00), (-0.00,0.00), (-0.00,0.00), (-0.00,0.00), (-0.00,0.00)]
-"""
 
 def generate_launch_description():
     log_level_arg = DeclareLaunchArgument(
@@ -74,7 +71,6 @@ def generate_launch_description():
                 'max_tokens': MAX_TOKENS,
                 'system_prompt': SYSTEM_PROMPT,
                 'human_prompt': HUMAN_PROMPT,
-                'gpt_prompt': GPT_PROMPT,
                 'camera_device': '/dev/video1'
             }],
             arguments=['--ros-args', '--log-level', log_level],

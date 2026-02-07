@@ -1,7 +1,7 @@
 import rclpy.logging 
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Twist, Point
+from geometry_msgs.msg import Twist, Point, PoseArray, Pose
 from nav_msgs.msg import Odometry
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
@@ -50,7 +50,7 @@ class MPCController(Node):
             raise
         
         self.subscription_odom = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
-        self.subscription_goal = self.create_subscription(Point, '/goal_point', self.goal_callback, 10)
+        self.subscription_goal = self.create_subscription(PoseArray, '/goal_point', self.goal_callback, 10)
         self.publisher_cmd = self.create_publisher(Twist, '/cmd_vel', 100)
         self.actual_path_pub = self.create_publisher(Path, '/actual_path', 10)
         self.reference_path_pub = self.create_publisher(Path, '/reference_path', 10)
@@ -70,18 +70,21 @@ class MPCController(Node):
         self.get_logger().info(f"MPC Controller Node started. Waiting for goals on /goal_point...")
 
     def goal_callback(self, msg):
-        new_goal = np.array([msg.x, msg.y])
-        self.get_logger().info(f"Received new goal via topic: {new_goal}")
-        
-        # 将新目标加入列表
-        self.goals.append(new_goal)
-        self.reference_path.append(new_goal.tolist())
-        
-        # 如果当前没有目标（处于空闲状态），则立即激活这个新目标
-        if self.goal_point is None:
-            self.goal_index = len(self.goals) - 1
-            self.goal_point = self.goals[self.goal_index]
-            self.get_logger().info(f"Starting execution with goal: {self.goal_point}")
+        self.get_logger().info(f"Received new goal path with {len(msg.poses)} points")
+
+        new_goals = []
+        for pose in msg.poses:
+            new_goals.append(np.array([pose.position.x, pose.position.y]))
+
+        if not new_goals:
+            return
+
+        self.goals = new_goals
+        self.reference_path = [g.tolist() for g in self.goals]
+
+        # 重置当前目标指针
+        self.goal_index = 0
+        self.goal_point = self.goals[self.goal_index]
 
     def odom_callback(self, msg):
         pos = msg.pose.pose.position
@@ -96,14 +99,11 @@ class MPCController(Node):
         # 记录实际路径
         self.actual_path.append(self.current_pose[:2].tolist())
         self.publish_path(self.actual_path, self.actual_path_pub, self.frame_id)
-        
         if self.reference_path:
             self.publish_path(self.reference_path, self.reference_path_pub, self.frame_id)
 
         # 如果没有目标，停车等待
-        if self.goal_point is None:
-            # 可以在这里发布 0 速度，确保安全
-            # self.publish_vel(0.0, 0.0) 
+        if not self.goals or self.goal_point is None:
             return
 
         dx = self.goal_point[0] - self.current_pose[0]
@@ -113,25 +113,26 @@ class MPCController(Node):
         if dist < 0.1:
             self.publish_vel(0.0, 0.0)
             self.get_logger().info(f"Goal {self.goal_index+1} reached: {self.goal_point}")
-            
-            # 切换到下一个目标
-            if self.goal_index + 1 < len(self.goals):
-                self.goal_index += 1
-                self.goal_point = self.goals[self.goal_index]
-                self.get_logger().info(f"Switching to next goal: {self.goal_point}")
-            else:
-                self.get_logger().info("All goals in queue reached. Waiting for new goals...")
-                self.goal_point = None
+            self.advance_goal()
             return
 
         v_cmd, w_cmd = self.mpc_solver.solve(self.current_pose, self.goal_point, self.get_logger())
-        
         self.get_logger().info(f"""
             vel: v={v_cmd:.2f}, w={w_cmd:.2f}
             Dist: {dist:.3f} m
             Goal: {self.goal_point}
         """, throttle_duration_sec=1.0)
         self.publish_vel(v_cmd, w_cmd)
+
+    def advance_goal(self):
+        # 切换到下一个目标；若列表被刷新，goal_index 会在 goal_callback 里重置
+        if self.goal_index + 1 < len(self.goals):
+            self.goal_index += 1
+            self.goal_point = self.goals[self.goal_index]
+            self.get_logger().info(f"Switching to next goal: {self.goal_point}")
+        else:
+            self.get_logger().info("All goals in queue reached. Waiting for new goals...")
+            self.goal_point = None
 
     def publish_path(self, path_points, publisher, frame_id):
         path_msg = Path()

@@ -1,11 +1,14 @@
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PoseArray, Pose
 import os
 import time
 
 # 默认路径
 DEFAULT_GOAL_FILE = "/home/apollo/disk/ros2/src/mpc/goal/goal.txt"
+
+
+#  todo 改为PoseArray
 
 class GoalSender(Node):
     def __init__(self):
