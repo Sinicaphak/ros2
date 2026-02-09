@@ -83,5 +83,5 @@ def generate_launch_description():
     ld.add_action(simulator_node)
     ld.add_action(mpc_controller_node)
     ld.add_action(rviz_node)
-    # ld.add_action(goal_sender_node)
+    ld.add_action(goal_sender_node)
     return ld
