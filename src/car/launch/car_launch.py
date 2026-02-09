@@ -26,9 +26,9 @@ IMG_HIGHT=240
 # 模型输出最大token数
 MAX_TOKENS = 100
 
-TEMPERATURE = 1.5
+TEMPERATURE = 0.0
 TOP_P = 1.0
-TOP_K = 60
+TOP_K = 5
 
 # prompt
 SYSTEM_PROMPT = """""

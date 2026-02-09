@@ -2,7 +2,8 @@ root_path="/home/apollo/disk/ros2"
 # root_path="/home/phak/ros2"
 clear
 cd $root_path
-
+rm -rf ./build/all_launcher ./build/car ./build/mpc_planner
+rm -rf ./install/all_launcher ./install/car ./install/mpc_planner
 # 检查 gs_usb 模块是否加载
 if ! lsmod | grep -q "gs_usb"; then
   echo "加载 gs_usb 模块..."

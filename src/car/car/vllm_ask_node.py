@@ -52,6 +52,8 @@ class VllmAskNode(Node):
         self.top_p = self.get_parameter('top_p').get_parameter_value().double_value
         self.top_k = self.get_parameter('top_k').get_parameter_value().integer_value
         
+        self.get_logger().warn(f"temperature={self.temperature}, top_p={self.top_k}, top_p={self.top_p}")
+        
         self.subscription = self.create_subscription(
             Image,
             self.pic_topic,

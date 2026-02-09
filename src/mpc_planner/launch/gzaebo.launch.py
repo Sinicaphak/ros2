@@ -22,6 +22,16 @@ def generate_launch_description():
         description='Logger level for all nodes')
 
     log_level = LaunchConfiguration('log_level')
+    
+    
+    default_params_file = '/home/apollo/disk/ros2/src/mpc_planner/config/mpc_params.yaml'
+
+    params_file_arg = DeclareLaunchArgument(
+        'params_file',
+        default_value=default_params_file,
+        description='Path to mpc params yaml'
+    )
+    params_file = LaunchConfiguration('params_file')
 
     robot_state_publisher = Node(
         package='robot_state_publisher',
@@ -55,7 +65,7 @@ def generate_launch_description():
         executable='mpc_controller',
         name='mpc_controller',
         output='screen',
-        parameters=[os.path.join(pkg_share, 'config', 'mpc_params.yaml')],
+        parameters=[params_file],
         arguments=['--ros-args', '--log-level', log_level],
     )
 
@@ -78,6 +88,7 @@ def generate_launch_description():
 
     ld = LaunchDescription()
     ld.add_action(log_level_arg)
+    ld.add_action(params_file_arg)  
     ld.add_action(joint_state_publisher)
     ld.add_action(robot_state_publisher)
     ld.add_action(simulator_node)
