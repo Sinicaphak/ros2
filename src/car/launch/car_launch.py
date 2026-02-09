@@ -8,7 +8,7 @@ from launch_ros.actions import Node
 from launch_ros.actions import Node
 
 # 图片目录
-PIC_DIR = "/home/apollo/disk/ros2/src/car/pic/5"
+PIC_DIR = "/home/apollo/disk/ros2/src/car/pic/6"
 # 话题
 PIC_TOPIC = "/car/pic"
 PROCESS_PIC_TOPIC = "/car/process_pic"
@@ -18,21 +18,24 @@ MODE="camera"
 # 发布频率(fps)
 FPS = 30
 # 模型API
-API_URL = "http://localhost:8002/v1/chat/completions"
+API_URL = "http://localhost:8003/v1/chat/completions"
 # 图片压缩质量 (1-100, 越低压缩率越高)
-COMPRESSION_QUALITY = 50
+COMPRESSION_QUALITY = 30
 IMG_WIDTH=426
 IMG_HIGHT=240
 # 模型输出最大token数
 MAX_TOKENS = 100
-# prompt
 
+TEMPERATURE = 1.5
+TOP_P = 1.0
+TOP_K = 60
+
+# prompt
 SYSTEM_PROMPT = """""
 You are an autonomous driving planner.
 Coordinate system: X-axis is lateral, Y-axis is longitudinal.
 The ego vehicle is at (0,0), units are meters.
 Based on the provided front-view image and driving context, plan future waypoints at 0.5-second intervals for the next 3 seconds.
-format: [(-0.00,0.00), (-0.00,0.00), (-0.00,0.00), (-0.00,0.00), (-0.00,0.00), (-0.00,0.00)]
 """""
 
 HUMAN_PROMPT = """""
@@ -42,15 +45,13 @@ Traffic rules:
 - Avoid collision with other objects.
 - Always drive on drivable regions.
 - Avoid occupied regions.
-
 Please plan future waypoints at 0.5-second intervals for the next 3 seconds.
-You MUST only output the trajectory within the specified format that system request.
 """
 
 
 def generate_launch_description():
     log_level_arg = DeclareLaunchArgument(
-        'log_level', default_value='warn',
+        'log_level', default_value='info',
         description='Logger level for all nodes')
 
     log_level = LaunchConfiguration('log_level')
@@ -71,7 +72,9 @@ def generate_launch_description():
                 'max_tokens': MAX_TOKENS,
                 'system_prompt': SYSTEM_PROMPT,
                 'human_prompt': HUMAN_PROMPT,
-                'camera_device': '/dev/video1'
+                'temperature': TEMPERATURE,
+                'top_p': TOP_P,
+                'top_k': TOP_K,
             }],
             arguments=['--ros-args', '--log-level', log_level],
         ),
@@ -84,7 +87,9 @@ def generate_launch_description():
                 'fps': FPS,
                 'pic_dir': PIC_DIR,
                 'mode': MODE,
+                'camera_device': '/dev/video0',
             }],
             arguments=['--ros-args', '--log-level', log_level],
         ),
     ])
+    

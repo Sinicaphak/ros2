@@ -18,13 +18,8 @@ else
   echo "can2 接口已经启动。"
 fi
 
-colcon build --packages-select car mpc_planner
+colcon build --packages-select car mpc_planner all_launcher
 # colcon build
 source $root_path/install/setup.bash
-# ros2 launch car car_launch.py
-# ros2 launch mpc_planner gzaebo.launch.py
-# ros2 launch hunter_base hunter_base.launch.py
 ros2 launch all_launcher all.launch.py
-
-git config --global user.name "NanoPhak"
-git config --global user.email 2967306689@qq.com
+# ros2 launch car car_launch.py log_level:=info

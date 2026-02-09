@@ -32,6 +32,9 @@ class VllmAskNode(Node):
         self.declare_parameter('max_tokens', 0)
         self.declare_parameter('system_prompt', '')
         self.declare_parameter('human_prompt', '')
+        self.declare_parameter('temperature', 0.0)
+        self.declare_parameter('top_p', 1.0)
+        self.declare_parameter('top_k', 1)
 
         # 获取参数并赋值为实例变量
         self.pic_topic = self.get_parameter('pic_topic').get_parameter_value().string_value
@@ -44,6 +47,10 @@ class VllmAskNode(Node):
         self.max_tokens = self.get_parameter('max_tokens').get_parameter_value().integer_value
         self.system_prompt = self.get_parameter('system_prompt').get_parameter_value().string_value
         self.human_prompt = self.get_parameter('human_prompt').get_parameter_value().string_value
+        
+        self.temperature = self.get_parameter('temperature').get_parameter_value().double_value
+        self.top_p = self.get_parameter('top_p').get_parameter_value().double_value
+        self.top_k = self.get_parameter('top_k').get_parameter_value().integer_value
         
         self.subscription = self.create_subscription(
             Image,
@@ -61,6 +68,9 @@ class VllmAskNode(Node):
         start_time = time.time()
         
         respone = self.__send_sequential_request(imgBase64, imgName)
+        if respone is None:
+            self.get_logger().warn(f"--> 响应 for {imgName} 失败")
+            return
 
         duration = time.time() - start_time
         self.total_duration += duration
@@ -107,7 +117,7 @@ class VllmAskNode(Node):
         for p in points:
             pose = Pose()
             pose.position = p
-            pose.orientation.w = 1
+            pose.orientation.w = 1.0
             pose_array.poses.append(pose)
             
         self.point_publisher_.publish(pose_array)   
@@ -132,9 +142,10 @@ class VllmAskNode(Node):
                 },
             ],
             "max_tokens": self.max_tokens,
-            "temperature": 0.0,
+            "temperature": self.temperature,
+            "top_p": self.top_p,
+            "top_k": self.top_k,
         }
-
 
         try:        
             response = requests.post(self.api_url, headers=headers, json=payload)

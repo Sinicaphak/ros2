@@ -41,7 +41,7 @@ def generate_launch_description():
         mpc_log_level_arg,
         hunter_log_level_arg,
         
-        # vllm_and_camera, 
+        vllm_and_camera,
         mpc_planner,
         # hunter,
     ])
