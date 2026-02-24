@@ -57,7 +57,6 @@ class MPCController(Node):
 
         self.current_pose = None
         
-        # 初始时没有目标，等待 GoalSender 发送
         self.goals = [] 
         self.goal_index = 0
         self.goal_point = None
@@ -67,24 +66,33 @@ class MPCController(Node):
 
         self.mpc_solver = NonlinearMPC(mpc_config)
         self.timer = self.create_timer(mpc_config.T, self.control_loop)
-        self.get_logger().info(f"MPC Controller Node started. Waiting for goals on /goal_point...")
 
     def goal_callback(self, msg):
-        self.get_logger().info(f"Received new goal path with {len(msg.poses)} points")
+        if self.current_pose is None:
+            self.get_logger().warn("No odom yet; skipping goal callback")
+            return
+
+        x_car, y_car, theta = self.current_pose
+        cos_t = math.cos(theta)
+        sin_t = math.sin(theta)
 
         new_goals = []
         for pose in msg.poses:
-            new_goals.append(np.array([pose.position.x, pose.position.y]))
+            # 相对(base) -> 全局(odom)
+            x_rel = pose.position.x
+            y_rel = pose.position.y
+            x_glob = x_car + cos_t * x_rel - sin_t * y_rel
+            y_glob = y_car + sin_t * x_rel + cos_t * y_rel
+            new_goals.append(np.array([x_glob, y_glob]))
 
         if not new_goals:
             return
 
         self.goals = new_goals
         self.reference_path = [g.tolist() for g in self.goals]
-
-        # 重置当前目标指针
         self.goal_index = 0
         self.goal_point = self.goals[self.goal_index]
+        # self.get_logger().info(f"Received {len(new_goals)} goals (converted to odom frame).")
 
     def odom_callback(self, msg):
         pos = msg.pose.pose.position
@@ -125,7 +133,6 @@ class MPCController(Node):
         self.publish_vel(v_cmd, w_cmd)
 
     def advance_goal(self):
-        # 切换到下一个目标；若列表被刷新，goal_index 会在 goal_callback 里重置
         if self.goal_index + 1 < len(self.goals):
             self.goal_index += 1
             self.goal_point = self.goals[self.goal_index]
