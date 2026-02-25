@@ -91,8 +91,12 @@ def generate_launch_description():
     ld.add_action(params_file_arg)  
     ld.add_action(joint_state_publisher)
     ld.add_action(robot_state_publisher)
-    ld.add_action(simulator_node)
     ld.add_action(mpc_controller_node)
     ld.add_action(rviz_node)
-    # ld.add_action(goal_sender_node)
+    
+    sim = True
+    if sim :
+        ld.add_action(simulator_node)
+        # ld.add_action(goal_sender_node)
+    
     return ld

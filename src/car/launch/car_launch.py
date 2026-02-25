@@ -13,10 +13,10 @@ PIC_DIR = "/home/apollo/disk/ros2/src/car/pic/6"
 PIC_TOPIC = "/car/pic"
 PROCESS_PIC_TOPIC = "/car/process_pic"
 COMMD_TOPIC = "/goal_point"
-# MODE="local"
-MODE="camera"
+MODE="local"
+# MODE="camera"
 # 发布频率(fps)
-FPS = 30
+FPS = 1
 # 模型API
 API_URL = "http://localhost:8003/v1/chat/completions"
 # 图片压缩质量 (1-100, 越低压缩率越高)
@@ -26,7 +26,7 @@ IMG_HIGHT=240
 # 模型输出最大token数
 MAX_TOKENS = 100
 
-TEMPERATURE = 0.0
+TEMPERATURE = 0.4
 TOP_P = 1.0
 TOP_K = 5
 
