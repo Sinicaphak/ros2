@@ -23,4 +23,4 @@ colcon build --packages-select car mpc_planner all_launcher
 # colcon build
 source $root_path/install/setup.bash
 ros2 launch all_launcher all.launch.py
-# ros2 launch car car_launch.py log_level:=info
+# ros2 launch car car_launch.py log_level:=info is_sim:=True

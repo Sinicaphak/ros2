@@ -31,22 +31,25 @@ TOP_P = 1.0
 TOP_K = 5
 
 # prompt
-SYSTEM_PROMPT = """""
+TEXT_1="""
 You are an autonomous driving planner.
 Coordinate system: X-axis is lateral, Y-axis is longitudinal.
 The ego vehicle is at (0,0), units are meters.
 Based on the provided front-view image and driving context, plan future waypoints at 0.5-second intervals for the next 3 seconds.
-"""""
 
-HUMAN_PROMPT = """""
-Here is the front-view image from the car.
+Here is the front-view image from the car:
+"""
+
+TEXT_2="""
 Mission goal: FORWARD
 Traffic rules:
 - Avoid collision with other objects.
 - Always drive on drivable regions.
 - Avoid occupied regions.
+
 Please plan future waypoints at 0.5-second intervals for the next 3 seconds.
 """
+
 
 
 def generate_launch_description():
@@ -70,8 +73,8 @@ def generate_launch_description():
                 'img_width': IMG_WIDTH,
                 'img_hight': IMG_HIGHT,
                 'max_tokens': MAX_TOKENS,
-                'system_prompt': SYSTEM_PROMPT,
-                'human_prompt': HUMAN_PROMPT,
+                'text_1': TEXT_1,
+                'text_2': TEXT_2,
                 'temperature': TEMPERATURE,
                 'top_p': TOP_P,
                 'top_k': TOP_K,
