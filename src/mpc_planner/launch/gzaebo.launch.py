@@ -66,6 +66,7 @@ def generate_launch_description():
             'cmd_timeout': 0.5
         }],
         arguments=['--ros-args', '--log-level', log_level],
+        condition=IfCondition(is_sim)
     )
 
     mpc_controller_node = Node(
@@ -84,6 +85,7 @@ def generate_launch_description():
         output='screen',
         parameters=[{'goal_file': goal_file_path}],
         arguments=['--ros-args', '--log-level', log_level],
+        condition=IfCondition(is_sim)
     )
 
     rviz_node = Node(
@@ -104,6 +106,6 @@ def generate_launch_description():
     ld.add_action(mpc_controller_node)
     ld.add_action(rviz_node)
     
-    ld.add_action(simulator_node, condition=IfCondition(is_sim))
-    ld.add_action(goal_sender_node, condition=IfCondition(is_sim))
+    ld.add_action(simulator_node)
+    # ld.add_action(goal_sender_node)
     return ld

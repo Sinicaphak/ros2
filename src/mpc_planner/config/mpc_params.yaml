@@ -9,6 +9,6 @@ mpc_controller:
       # 控制权重: v, omega
       r_weights: [2.0, 0.2]
       # 速度限制: v_min, omega_min
-      u_lower: [-0.0, -2.0]
+      u_lower: [-0.0, -1.0]
       # 速度限制: v_max, omega_max
-      u_upper: [0.5, 2.0]
+      u_upper: [0.5, 1.0]

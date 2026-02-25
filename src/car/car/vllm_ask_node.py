@@ -132,26 +132,27 @@ class VllmAskNode(Node):
         headers = {"Content-Type": "application/json"}
         payload = {
             "model": "/app/model",
-            "messages": {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": self.text_1
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": imgBase64
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": self.text_1
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": imgBase64
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": self.text_2
                         }
-                    },
-                    {
-                        "type": "text",
-                        "text": self.text_2
-                    }
-                ]
-            },
-            
+                    ]
+                },
+            ],
             "max_tokens": self.max_tokens,
             "temperature": self.temperature,
             "top_p": self.top_p,
@@ -181,8 +182,12 @@ class VllmAskNode(Node):
         points = []
         for x_str, y_str in matches:
             p = Point()
-            p.x = float(x_str)
-            p.y = float(y_str)
+            # p.x = float(x_str)
+            # p.y = float(y_str)
+            
+            # 模型生成的是左手坐标系, ros2里用的是右手坐标系, 换一下xy位置
+            p.x = float(y_str)
+            p.y = float(x_str)
             p.z = 0.0
             points.append(p)
         return points

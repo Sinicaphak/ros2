@@ -14,7 +14,7 @@ class ImagePublisherNode(Node):
         self.declare_parameter('mode', 'local')
         self.declare_parameter('pic_topic', '/car/pic')
         self.declare_parameter('fps', 30)
-        self.declare_parameter('pic_dir', '/home/apollo/disk/ros2/src/car/pic/3')
+        self.declare_parameter('pic_dir', '/home/apollo/disk/ros2/src/car/pic/0')
         self.declare_parameter('camera_device', '/dev/video114')
         self.declare_parameter('frame_width', 0)
         self.declare_parameter('frame_height', 0)
@@ -96,8 +96,13 @@ class ImagePublisherNode(Node):
             self.publish_frame(cv_image, image_file)
             self.current_image_index += 1
             if self.current_image_index >= len(self.cv_images):
-                self.get_logger().info(f'已发布完所有图片共{len(self.cv_images)}张，停止发布。')
-                self.timer.cancel()
+                reload = True
+                if reload:
+                    self.get_logger().info(f'已发布完所有图片共{len(self.cv_images)}张，重新发布。')
+                    self.current_image_index = 0
+                else:
+                    self.get_logger().info(f'已发布完所有图片共{len(self.cv_images)}张，停止发布。')
+                    self.timer.cancel()
         else:
             if self.cap is None or not self.cap.isOpened():
                 self.get_logger().warn('摄像头未打开，无法发布。', throttle_duration_sec=5)

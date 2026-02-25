@@ -8,7 +8,7 @@ from launch_ros.actions import Node
 from launch_ros.actions import Node
 
 # 图片目录
-PIC_DIR = "/home/apollo/disk/ros2/src/car/pic/6"
+PIC_DIR = "/home/apollo/disk/ros2/src/car/pic/8"
 # 话题
 PIC_TOPIC = "/car/pic"
 PROCESS_PIC_TOPIC = "/car/process_pic"
@@ -26,19 +26,33 @@ IMG_HIGHT=240
 # 模型输出最大token数
 MAX_TOKENS = 100
 
-TEMPERATURE = 0.4
+TEMPERATURE = 0.0
 TOP_P = 1.0
 TOP_K = 5
 
 # prompt
+# TEXT_1="""
+# You are an autonomous driving planner.
+# Coordinate system: X-axis is lateral, Y-axis is longitudinal.
+# The ego vehicle is at (0,0), units are meters.
+# Based on the provided front-view image and driving context, plan future waypoints at 0.5-second intervals for the next 3 seconds.
+
+# Here is the front-view image from the car:
+# """
+
 TEXT_1="""
 You are an autonomous driving planner.
-Coordinate system: X-axis is lateral, Y-axis is longitudinal.
+Coordinate system: 
+Coordinate system: Vehicle at (0,0). X=right(+)/left(-), Y=forward(+).
+For straight driving, keep X ≈ 0.
 The ego vehicle is at (0,0), units are meters.
+Keep the vehicle in the center of the lane. X coordinate should be close to 0 for straight driving.
+
 Based on the provided front-view image and driving context, plan future waypoints at 0.5-second intervals for the next 3 seconds.
 
 Here is the front-view image from the car:
 """
+
 
 TEXT_2="""
 Mission goal: FORWARD
