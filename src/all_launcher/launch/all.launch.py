@@ -51,3 +51,5 @@ def generate_launch_description():
     if not is_sim:
         ld.add_action(hunter_log_level_arg)
         ld.add_action(hunter)
+        
+    return ld
