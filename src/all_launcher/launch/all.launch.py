@@ -6,6 +6,8 @@ import os
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 
+is_sim = True
+
 def generate_launch_description():
     vllm_and_camera_log_level_arg = DeclareLaunchArgument('vllm_and_camera_log_level', default_value='info')
     mpc_log_level_arg = DeclareLaunchArgument('mpc_log_level', default_value='info')
@@ -26,7 +28,10 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('mpc_planner'), 'launch', 'gzaebo.launch.py')
         ),
-        launch_arguments={'log_level': mpc_log_level}.items()
+        launch_arguments={
+            'log_level': mpc_log_level,
+            'is_sim': str(is_sim)    
+        }.items()
     )
     
     hunter = IncludeLaunchDescription(
@@ -36,12 +41,13 @@ def generate_launch_description():
         launch_arguments={'log_level': hunter_log_level}.items()
     )
 
-    return LaunchDescription([
-        vllm_and_camera_log_level_arg,
-        mpc_log_level_arg,
-        hunter_log_level_arg,
-        
-        vllm_and_camera,
-        mpc_planner,
-        # hunter,
-    ])
+    ld = LaunchDescription()
+    
+    ld.add_action(vllm_and_camera_log_level_arg)
+    ld.add_action(mpc_log_level_arg)
+    ld.add_action(vllm_and_camera)
+    ld.add_action(mpc_planner)
+    
+    if not is_sim:
+        ld.add_action(hunter_log_level_arg)
+        ld.add_action(hunter)

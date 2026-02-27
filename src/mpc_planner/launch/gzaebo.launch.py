@@ -6,6 +6,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch.conditions import IfCondition
 
 
 def generate_launch_description():
@@ -22,6 +23,13 @@ def generate_launch_description():
         description='Logger level for all nodes')
 
     log_level = LaunchConfiguration('log_level')
+    
+    is_sim_arg = DeclareLaunchArgument(
+        'is_sim',
+        default_value='true',
+        description='Whether to include simulator and goal sender nodes'
+    )
+    is_sim = LaunchConfiguration('is_sim')
     
     
     default_params_file = '/home/apollo/disk/ros2/src/mpc_planner/config/mpc_params.yaml'
@@ -88,11 +96,14 @@ def generate_launch_description():
 
     ld = LaunchDescription()
     ld.add_action(log_level_arg)
-    ld.add_action(params_file_arg)  
+    ld.add_action(params_file_arg)
+    ld.add_action(is_sim_arg)
+    
     ld.add_action(joint_state_publisher)
     ld.add_action(robot_state_publisher)
-    ld.add_action(simulator_node)
     ld.add_action(mpc_controller_node)
     ld.add_action(rviz_node)
-    # ld.add_action(goal_sender_node)
+    
+    ld.add_action(simulator_node, condition=IfCondition(is_sim))
+    ld.add_action(goal_sender_node, condition=IfCondition(is_sim))
     return ld

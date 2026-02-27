@@ -30,8 +30,10 @@ class VllmAskNode(Node):
         self.declare_parameter('img_width', 0)
         self.declare_parameter('img_hight', 0)
         self.declare_parameter('max_tokens', 0)
-        self.declare_parameter('system_prompt', '')
-        self.declare_parameter('human_prompt', '')
+        # self.declare_parameter('system_prompt', '')
+        # self.declare_parameter('human_prompt', '')
+        self.declare_parameter('text_1', '')
+        self.declare_parameter('text_2', '')
         self.declare_parameter('temperature', 0.0)
         self.declare_parameter('top_p', 1.0)
         self.declare_parameter('top_k', 1)
@@ -45,8 +47,10 @@ class VllmAskNode(Node):
         self.img_width = self.get_parameter('img_width').get_parameter_value().integer_value
         self.img_hight = self.get_parameter('img_hight').get_parameter_value().integer_value
         self.max_tokens = self.get_parameter('max_tokens').get_parameter_value().integer_value
-        self.system_prompt = self.get_parameter('system_prompt').get_parameter_value().string_value
-        self.human_prompt = self.get_parameter('human_prompt').get_parameter_value().string_value
+        # self.system_prompt = self.get_parameter('system_prompt').get_parameter_value().string_value
+        # self.human_prompt = self.get_parameter('human_prompt').get_parameter_value().string_value
+        self.text_1 = self.get_parameter('text_1').get_parameter_value().string_value
+        self.text_2 = self.get_parameter('text_2').get_parameter_value().string_value
         
         self.temperature = self.get_parameter('temperature').get_parameter_value().double_value
         self.top_p = self.get_parameter('top_p').get_parameter_value().double_value
@@ -128,21 +132,26 @@ class VllmAskNode(Node):
         headers = {"Content-Type": "application/json"}
         payload = {
             "model": "/app/model",
-            "messages": [
-                {
-                    "role": "system",
-                    "content": [
-                        {"type": "text", "text": self.system_prompt}
-                    ]
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "image_url", "image_url": {"url": imgBase64}},
-                        {"type": "text", "text": self.human_prompt}
-                    ]
-                },
-            ],
+            "messages": {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": self.text_1
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": imgBase64
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": self.text_2
+                    }
+                ]
+            },
+            
             "max_tokens": self.max_tokens,
             "temperature": self.temperature,
             "top_p": self.top_p,
