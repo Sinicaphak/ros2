@@ -1,4 +1,6 @@
 import subprocess
+from std_msgs.msg import Bool
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy, HistoryPolicy
 import time
 import rclpy
 from rclpy.node import Node
@@ -15,7 +17,7 @@ class ImagePublisherNode(Node):
         self.declare_parameter('pic_topic', '/car/pic')
         self.declare_parameter('fps', 30)
         self.declare_parameter('pic_dir', '/home/apollo/disk/ros2/src/car/pic/0')
-        self.declare_parameter('camera_device', '/dev/video114')
+        self.declare_parameter('camera_device', ['/dev/video114514'])
         self.declare_parameter('frame_width', 0)
         self.declare_parameter('frame_height', 0)
 
@@ -23,11 +25,11 @@ class ImagePublisherNode(Node):
         self.pic_topic = self.get_parameter('pic_topic').get_parameter_value().string_value
         self.fps = self.get_parameter('fps').get_parameter_value().integer_value
         self.pic_dir = self.get_parameter('pic_dir').get_parameter_value().string_value
-        self.camera_device = self.get_parameter('camera_device').get_parameter_value().string_value
+        camera_devices_param = self.get_parameter('camera_device').get_parameter_value().string_array_value
+        self.camera_devices = list(camera_devices_param) if camera_devices_param else ['/dev/video0']
+        self.camera_device = ''  # 实际选中的设备
         self.frame_width = self.get_parameter('frame_width').get_parameter_value().integer_value
         self.frame_height = self.get_parameter('frame_height').get_parameter_value().integer_value
-
-        time.sleep(4)
 
         self.publisher_ = self.create_publisher(Image, self.pic_topic, 10)
         timer_period = 1.0 / self.fps
@@ -45,11 +47,36 @@ class ImagePublisherNode(Node):
         else:
             self.init_camera()
             self.get_logger().info(f'摄像头模式: 设备 {self.camera_device}, {self.fps} FPS')
+            
+        self.model_ready = False
+        ready_qos = QoSProfile(
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+        )
+        self.ready_sub = self.create_subscription(
+            Bool, "/car/model_ready", self._on_model_ready, ready_qos
+        )
+    
+    def _on_model_ready(self, msg: Bool):
+        self.model_ready = bool(msg.data)
+        if self.model_ready:
+            self.get_logger().info("收到模型就绪信号，开始发布图像")
 
     def init_camera(self):
-        self.cap = cv2.VideoCapture(self.camera_device)
-        if not self.cap.isOpened():
-            self.get_logger().error(f'无法打开摄像头 {self.camera_device}')
+        self.cap = None
+        for device in self.camera_devices:
+            cap = cv2.VideoCapture(device)
+            if cap.isOpened():
+                self.cap = cap
+                self.camera_device = device
+                self.get_logger().info(f'已选择可用摄像头: {self.camera_device}')
+                break
+            cap.release()
+
+        if self.cap is None:
+            self.get_logger().error(f'无法打开任何摄像头设备: {self.camera_devices}')
             rclpy.shutdown()
             os._exit(1)
             return
@@ -85,6 +112,9 @@ class ImagePublisherNode(Node):
         self.publisher_.publish(ros_image)
 
     def timer_callback(self):
+        if not self.model_ready:
+            return
+        
         if self.mode == 'local':
             if not self.cv_images:
                 self.get_logger().warn('没有可发布的图片，请检查图片目录。', throttle_duration_sec=5)

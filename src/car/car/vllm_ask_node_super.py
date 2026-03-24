@@ -1,5 +1,3 @@
-from std_msgs.msg import Bool
-from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy, HistoryPolicy
 import json 
 from geometry_msgs.msg import Point, PoseArray, Pose
 import rclpy
@@ -17,9 +15,9 @@ from datetime import datetime
 import re
 from openai import OpenAI
 
-class VllmAskNode(Node):
+class VllmAskNodeSuper(Node):
     def __init__(self):
-        super().__init__('vllm_ask_node')
+        super().__init__('vllm_ask_node_super')
         
         self.total_duration = 0.0
         self.request_count = 0
@@ -33,8 +31,6 @@ class VllmAskNode(Node):
         self.declare_parameter('img_width', 0)
         self.declare_parameter('img_hight', 0)
         self.declare_parameter('max_tokens', 0)
-        # self.declare_parameter('system_prompt', '')
-        # self.declare_parameter('human_prompt', '')
         self.declare_parameter('text_1', '')
         self.declare_parameter('text_2', '')
         self.declare_parameter('temperature', 0.0)
@@ -51,8 +47,6 @@ class VllmAskNode(Node):
         self.img_width = self.get_parameter('img_width').get_parameter_value().integer_value
         self.img_hight = self.get_parameter('img_hight').get_parameter_value().integer_value
         self.max_tokens = self.get_parameter('max_tokens').get_parameter_value().integer_value
-        # self.system_prompt = self.get_parameter('system_prompt').get_parameter_value().string_value
-        # self.human_prompt = self.get_parameter('human_prompt').get_parameter_value().string_value
         self.text_1 = self.get_parameter('text_1').get_parameter_value().string_value
         self.text_2 = self.get_parameter('text_2').get_parameter_value().string_value
         self.enable_thinking = self.get_parameter('enable_thinking').get_parameter_value().string_value
@@ -71,20 +65,6 @@ class VllmAskNode(Node):
         self.point_publisher_ = self.create_publisher(PoseArray, self.commd_topic, 10)
         self.process_img_publisher_ = self.create_publisher(Image, self.process_pic_topic, 10)
         self.bridge = CvBridge()
-        self.say_model_ready()
-        
-    # 通知启动就绪
-    def say_model_ready(self):
-        ready_qos = QoSProfile(
-            history=HistoryPolicy.KEEP_LAST,
-            depth=1,
-            reliability=ReliabilityPolicy.RELIABLE,
-            durability=DurabilityPolicy.TRANSIENT_LOCAL,
-        )
-        self.model_ready_pub = self.create_publisher(Bool, "/car/model_ready", ready_qos)
-        msg = Bool()
-        msg.data = True
-        self.model_ready_pub.publish(msg)
         
     def image_callback(self, msg):
         imgBase64, imgName = self.__process_image(msg)
@@ -189,7 +169,7 @@ class VllmAskNode(Node):
             response = requests.post(self.api_url, headers=headers, json=payload)
             response.raise_for_status()            
             response_data = response.json()
-            self.get_logger().error(f"响应 for {imgName}:\n{json.dumps(response_data, indent=2, ensure_ascii=False)}")
+            self.get_logger().info(f"响应 for {imgName}:\n{json.dumps(response_data, indent=2, ensure_ascii=False)}")
             assistant_message = response_data['choices'][0]['message']['content']
 
             return assistant_message

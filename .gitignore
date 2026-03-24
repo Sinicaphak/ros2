@@ -6,3 +6,6 @@ src/hunter_ros2/*
 src/ugv_sdk/*
 src/car/pic/
 .vscode
+tools/**
+OmniVLA.egg-info
+ros_OmniVLA.egg-info
