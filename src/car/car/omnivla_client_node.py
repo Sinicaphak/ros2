@@ -70,7 +70,7 @@ class OmniVLAClientNode(Node):
         self.goal_compass = self.get_parameter('goal_compass').get_parameter_value().double_value
 
         self.get_logger().info(f"服务器地址: {self.server_url}")
-        self.get_logger().info(f"请求超时: {self.request_timeout}s")
+        # self.get_logger().info(f"请求超时: {self.request_timeout}s")
 
         # 初始化状态
         self.language_prompt = "stop"
@@ -139,6 +139,7 @@ class OmniVLAClientNode(Node):
                 self.get_logger().info(f"服务器连接成功, 模型已加载: {model_loaded}, 设备: {device}")
             else:
                 self.get_logger().warn(f"服务器返回非200状态: {response.status_code}")
+                self.get_logger().warn(f"服务器返回非200状态: {response}")
         except Exception as e:
             self.get_logger().warn(f"无法连接到服务器: {e}")
 

@@ -20,9 +20,10 @@ PROMPT_TOPIC = "/car/prompt"
 
 class PicModeType(Enum):
     LOCAL = "local"
-    CAMERA = "camera"
+    CAMERA_SINGAL = "camera_signal"
+    CAMERA_DUAL = "camera_dual"
 
-MODE=PicModeType.CAMERA
+MODE=PicModeType.CAMERA_DUAL
 # 发布频率(fps)
 FPS = 1
 # 模型API
@@ -42,7 +43,7 @@ class ModelType(Enum):
 MODEL_TYPE = ModelType.OMNI_CLIENT
 
 # 服务器地址（OmniVLA API）
-SERVER_URL = "http://connect.cqa1.seetacloud.com:8000"
+SERVER_URL = "http://localhost:8000"
 
 TEMPERATURE = 1.0
 TOP_P = 1.0
@@ -143,6 +144,7 @@ def generate_launch_description():
             arguments=['--ros-args', '--log-level', log_level],
         )
     elif MODEL_TYPE == ModelType.OMNI:
+        '''
         MODEL_PATH = "/home/apollo/disk/ros2/src/car/car/omnivla-edge/omnivla-edge.pth"
         LANGUAGE_PROMPT = "stop"
         GOAL_LAT = 0.0
@@ -181,6 +183,7 @@ def generate_launch_description():
             }],
             arguments=['--ros-args', '--log-level', log_level],
         )
+        '''
     elif MODEL_TYPE == ModelType.OMNI_CLIENT:
         # 远程客户端模式
         model_name = 'omnivla_client'
