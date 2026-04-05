@@ -96,6 +96,31 @@ launch_system() {
   ros2 launch all_launcher all.launch.py
 }
 
+start_ssh_tunnel_terminal() {
+  local ssh_cmd="ssh -p 28853 -N -L 8000:localhost:8000 root@connect.cqa1.seetacloud.com"
+
+  # 必须有图形会话才能开“新终端窗口”
+  if [ -z "${DISPLAY:-}" ]; then
+    echo "[ERROR] 未检测到图形桌面（DISPLAY 为空），无法打开新终端窗口。"
+    echo "可手动在另一个终端执行: $ssh_cmd"
+    exit 1
+  fi
+
+  if command -v gnome-terminal >/dev/null 2>&1; then
+    gnome-terminal -- bash -lc "$ssh_cmd; exec bash" &
+  elif command -v x-terminal-emulator >/dev/null 2>&1; then
+    x-terminal-emulator -e bash -lc "$ssh_cmd; exec bash" &
+  elif command -v xterm >/dev/null 2>&1; then
+    xterm -e bash -lc "$ssh_cmd; exec bash" &
+  else
+    echo "[ERROR] 找不到可用终端程序（gnome-terminal/x-terminal-emulator/xterm）"
+    echo "请手动在另一个终端执行: $ssh_cmd"
+    exit 1
+  fi
+
+  echo "已打开新终端启动 SSH 隧道，请在新终端输入密码。"
+}
+
 main() {
   init_conda
   ensure_conda_env
